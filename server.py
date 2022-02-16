@@ -1,11 +1,11 @@
 #  this is the actual back end server
-from flask import Flask, abort
+from flask import Flask, abort, request
 from mock_data import catalog
 from about_me import me, test
 import json 
+import random
 
 app = Flask("server")
-
 
 @app.route("/", methods=["get"])
 def home_page(): 
@@ -29,6 +29,25 @@ def add():
 def get_catalog():
     return json.dumps(catalog)
     # this will parse the catalog and return it as a json string
+
+@app.route("/api/catalog", methods=["POST"])
+def save_product():
+    product = request.get_json() # read the payload as a dictionary from json string
+    if not "title" in product or len(product["title"]) < 5:
+        return abort(400, "There should be a title with a minimum of 5 chars.")
+
+    if not "price" in product: 
+        return abort(400, "There should be a price for the product with a minimum of $50")
+    if not isinstance(product["price"], int) and not isinstance("price", float):
+        return abort(400, "Price is invalid. Must be a number")
+    if product["price"] <= 0:
+        return abort(400, "Product must me more than $0")
+    # assign a unique _id
+    product["_id"] = random.randint(10, 100)
+    # save to catalog
+    catalog.append(product)
+    # return the product
+    return json.dumps(product)
 
 @app.route("/api/catalog/count")
 def catalog_count():
@@ -61,7 +80,48 @@ def get_most_expensive():
             pivot = prod
     return json.dumps(pivot)
 
+@app.route("/api/categories")
+def get_categories():
+    res = []
+    for prod in catalog: 
+        category = prod["category"]
+        if not category in res:
+            res.append(category)
+        print(prod["category"])
 
+    return json.dumps(res)
 
+@app.route("/api/catalog/<category>")
+def products_by_category(category):
+    for prod in catalog:
+        if prod["category"] == category:
+            print(prod["title"])
+        
+    return "OK"
+
+savings = []
+
+@app.route("/api/coupons")
+def get_coupons(): 
+    return json.dumps(savings)
+
+@app.route("/api/coupons", methods=["POST"])
+def save_coupon():
+    coupon = request.get_json()
+    if not "code" in coupon: 
+        return abort(400, "Coupon code required")
+    if not "discount" in coupon:
+        return abort(400, "Discount amount required")
+    # save to catalog
+    savings.append(coupon)
+    # return the product
+    return json.dumps(coupon)
+
+@app.route("/api/coupons/<code>")
+def get_coupon(code):
+    for coupon in savings: 
+        if (code == coupon["code"]):
+            return coupon
+    return abort(404) # 404 = not found
 # start the server
 app.run(debug=True)
