@@ -74,9 +74,16 @@ def get_product(id):
 @app.route("/api/product/most_expensive")
 def get_most_expensive():
     pivot = catalog[0]
-
     for prod in catalog: 
         if prod["price"] >= pivot["price"]:
+            pivot = prod
+    return json.dumps(pivot)
+
+@app.route("/api/product/cheapest")
+def get_cheapest():
+    pivot = catalog[0]
+    for prod in catalog: 
+        if prod["price"] <= pivot["price"]:
             pivot = prod
     return json.dumps(pivot)
 
@@ -93,11 +100,14 @@ def get_categories():
 
 @app.route("/api/catalog/<category>")
 def products_by_category(category):
+    res = []
     for prod in catalog:
+        list = prod["title"]
         if prod["category"] == category:
-            print(prod["title"])
+            res.append(list)
+        print(prod["title"])
         
-    return "OK"
+    return json.dumps(res)
 
 savings = []
 
